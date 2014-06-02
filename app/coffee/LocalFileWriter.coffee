@@ -3,7 +3,8 @@ uuid = require('node-uuid')
 path = require("path")
 _ = require("underscore")
 logger = require("logger-sharelatex")
-metrics = require("./metrics")
+metrics = require("metrics-sharelatex")
+Settings = require("settings-sharelatex")
 
 module.exports = 
 
@@ -26,10 +27,11 @@ module.exports =
 			callback err
 
 	deleteFile: (fsPath, callback)->
+		logger.log fsPath:fsPath, "removing local temp file"
 		fs.unlink fsPath, callback
 
 	_getPath : (key)->
 		if !key?
 			key = uuid.v1()
 		key = key.replace(/\//g,"-")
-		path.join(__dirname, "../../uploads/#{key}")
+		path.join(Settings.path.uploadFolder, key)

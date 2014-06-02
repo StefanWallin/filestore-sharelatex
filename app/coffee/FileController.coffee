@@ -1,9 +1,8 @@
-s3Wrapper = require("./s3Wrapper")
+PersistorManager = require("./PersistorManager")
 settings = require("settings-sharelatex")
 logger = require("logger-sharelatex")
 FileHandler = require("./FileHandler")
-LocalFileWriter = require("./LocalFileWriter")
-metrics = require("./metrics")
+metrics = require("metrics-sharelatex")
 oneDayInSeconds = 60 * 60 * 24
 
 module.exports =
@@ -16,8 +15,9 @@ module.exports =
 		FileHandler.getFile bucket, key, {format:format,style:style}, (err, fileStream)->
 			if err?
 				logger.err err:err, key:key, bucket:bucket, format:format, style:style, "problem getting file"
-				res.send 500
-			else if req.params.cacheWarm
+				if !res.finished and res?.send? 
+					res.send 500
+			else if req.query.cacheWarm
 				logger.log key:key, bucket:bucket, format:format, style:style, "request is only for cache warm so not sending stream"
 				res.send 200
 			else
@@ -37,9 +37,9 @@ module.exports =
 		oldProject_id = req.body.source.project_id
 		oldFile_id = req.body.source.file_id
 		logger.log key:key, bucket:bucket, oldProject_id:oldProject_id, oldFile_id:oldFile_id, "reciving request to copy file"
-		s3Wrapper.copyFile bucket, "#{oldProject_id}/#{oldFile_id}", key, (err)->
+		PersistorManager.copyFile bucket, "#{oldProject_id}/#{oldFile_id}", key, (err)->
 			if err? 
-				logger.log err:err, oldProject_id:oldProject_id, oldFile_id:oldFile_id, "something went wrong copying file in s3Wrapper"
+				logger.log err:err, oldProject_id:oldProject_id, oldFile_id:oldFile_id, "something went wrong copying file"
 				res.send 500
 			else
 				res.send 200
@@ -50,7 +50,7 @@ module.exports =
 		logger.log key:key, bucket:bucket,  "reciving request to delete file"
 		FileHandler.deleteFile bucket, key, (err)->
 			if err?
-				logger.log err:err, key:key, bucket:bucket, "something went wrong deleting file in s3Wrapper"
+				logger.log err:err, key:key, bucket:bucket, "something went wrong deleting file"
 				res.send 500
 			else
 				res.send 204
